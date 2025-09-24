@@ -40,7 +40,7 @@ export default function EasyLoansLanding() {
         trackingId: '',
         qualifiedAmount: 0,
         verificationFee: 0,
-        interestRate: 5,
+        interestRate: 10,
         repaymentPeriod: 2
     })
 

@@ -1,8 +1,9 @@
-// src/app/components/loan-results.tsx
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { CheckCircle, Shield, Zap } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { CheckCircle, Shield, Zap, Loader2, AlertCircle, Clock } from 'lucide-react'
+import { usePayment } from '@/hooks/usePayment'
 
 interface FormData {
     fullName: string
@@ -43,6 +44,39 @@ export default function LoanResults({
     onProceedWithLoan,
     onApplyForDifferentLoan
 }: LoanResultsProps) {
+    const {
+        initiatePayment,
+        retryPayment,
+        isLoading,
+        paymentStatus,
+        resetPaymentStatus,
+        isPaymentInProgress,
+        isPaymentComplete,
+        isPaymentFailed
+    } = usePayment()
+
+    const handlePayVerificationFee = async () => {
+        try {
+            await initiatePayment({
+                phoneNumber: `0${formData.mpesaPhone}`,
+                amount: loanDetails.verificationFee,
+                accountReference: loanDetails.trackingId.substring(0, 12),
+                transactionDesc: 'Verification Fee'
+            })
+        } catch (error) {
+            console.error('Payment error:', error)
+        }
+    }
+
+    const handleRetryPayment = () => {
+        handlePayVerificationFee()
+    }
+
+    const handleProceedToLoan = () => {
+        // This would typically disburse the loan
+        alert('Loan disbursement initiated! You will receive your funds within 5 minutes.')
+        onProceedWithLoan()
+    }
     return (
         <div className="min-h-screen bg-gradient-to-br from-green-50 to-white">
             {/* Header */}
@@ -69,7 +103,49 @@ export default function LoanResults({
                         <p className="text-xl text-gray-600">Your loan has been processed successfully</p>
                     </div>
 
-                    {/* Congratulations Message */}
+                    {/* Payment Status Alert */}
+                    {paymentStatus.status !== 'idle' && (
+                        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
+                            {paymentStatus.status === 'processing' && (
+                                <Alert className="border-blue-200 bg-blue-50">
+                                    <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                                    <AlertDescription className="text-blue-800">
+                                        {paymentStatus.message}
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+
+                            {paymentStatus.status === 'pending' && (
+                                <Alert className="border-yellow-200 bg-yellow-50">
+                                    <Clock className="w-4 h-4 text-yellow-600" />
+                                    <AlertDescription className="text-yellow-800">
+                                        <strong>Check your phone!</strong><br />
+                                        {paymentStatus.message}
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+
+                            {paymentStatus.status === 'success' && (
+                                <Alert className="border-green-200 bg-green-50">
+                                    <CheckCircle className="w-4 h-4 text-green-600" />
+                                    <AlertDescription className="text-green-800">
+                                        <strong>Payment Successful!</strong><br />
+                                        {paymentStatus.message}
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+
+                            {isPaymentFailed && (
+                                <Alert className="border-red-200 bg-red-50">
+                                    <AlertCircle className="w-4 h-4 text-red-600" />
+                                    <AlertDescription className="text-red-800">
+                                        <strong>Payment {paymentStatus.status === 'cancelled' ? 'Cancelled' : 'Failed'}</strong><br />
+                                        {paymentStatus.message}
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+                        </div>
+                    )}
                     <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-green-200">
                         <div className="bg-green-50 border-l-4 border-green-500 p-6 rounded-lg">
                             <p className="text-lg text-green-800 font-semibold leading-relaxed">
@@ -149,35 +225,53 @@ export default function LoanResults({
                         </div>
                     </div>
 
-                    {/* Timeline */}
+                    {/* Timeline - Updated based on payment status */}
                     <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
                         <h3 className="text-xl font-bold text-gray-900 mb-6">What's Next?</h3>
                         <div className="space-y-4">
                             <div className="flex items-center gap-4">
-                                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                                    <span className="text-white font-bold text-sm">1</span>
-                                </div>
-                                <div>
-                                    <div className="font-semibold text-gray-900">Proceed with Loan</div>
-                                    <div className="text-sm text-gray-600">Click the button below to continue</div>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                                    <span className="text-white font-bold text-sm">2</span>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isPaymentComplete ? 'bg-green-500' : 'bg-blue-500'
+                                    }`}>
+                                    {isPaymentComplete ? (
+                                        <CheckCircle className="w-4 h-4 text-white" />
+                                    ) : (
+                                        <span className="text-white font-bold text-sm">1</span>
+                                    )}
                                 </div>
                                 <div>
                                     <div className="font-semibold text-gray-900">Pay Verification Fee</div>
-                                    <div className="text-sm text-gray-600">Complete the one-time verification process</div>
+                                    <div className="text-sm text-gray-600">
+                                        {isPaymentComplete ? 'Completed ✓' : 'Pay KES ' + loanDetails.verificationFee + ' via M-Pesa'}
+                                    </div>
                                 </div>
                             </div>
                             <div className="flex items-center gap-4">
-                                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isPaymentComplete ? 'bg-green-500' : 'bg-gray-300'
+                                    }`}>
+                                    {isPaymentComplete ? (
+                                        <CheckCircle className="w-4 h-4 text-white" />
+                                    ) : (
+                                        <span className="text-white font-bold text-sm">2</span>
+                                    )}
+                                </div>
+                                <div>
+                                    <div className="font-semibold text-gray-900">Loan Disbursement</div>
+                                    <div className="text-sm text-gray-600">
+                                        {isPaymentComplete
+                                            ? 'Ready for disbursement'
+                                            : 'After verification fee payment'
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isPaymentComplete ? 'bg-green-500' : 'bg-gray-300'
+                                    }`}>
                                     <span className="text-white font-bold text-sm">3</span>
                                 </div>
                                 <div>
                                     <div className="font-semibold text-gray-900">Receive Funds</div>
-                                    <div className="text-sm text-gray-600">Money will be sent to your M-Pesa within 5 minutes</div>
+                                    <div className="text-sm text-gray-600">Money sent to M-Pesa within 5 minutes</div>
                                 </div>
                             </div>
                         </div>
@@ -199,19 +293,44 @@ export default function LoanResults({
                         </div>
                     </div>
 
-                    {/* Action Buttons */}
+                    {/* Action Buttons - Updated based on payment status */}
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Button
-                            size="lg"
-                            className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white font-bold px-8 py-4 text-lg transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
-                            onClick={onProceedWithLoan}
-                        >
-                            <div className="flex items-center gap-3">
-                                <CheckCircle className="w-6 h-6" />
-                                Proceed with Loan
-                            </div>
-                        </Button>
+                        {!isPaymentComplete ? (
+                            <>
+                                {/* Pay Verification Fee Button */}
+                                <Button
+                                    size="lg"
+                                    disabled={isPaymentInProgress}
+                                    className="bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white font-bold px-8 py-4 text-lg transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
+                                    onClick={isPaymentFailed ? handleRetryPayment : handlePayVerificationFee}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        {isPaymentInProgress ? (
+                                            <Loader2 className="w-6 h-6 animate-spin" />
+                                        ) : (
+                                            <Shield className="w-6 h-6" />
+                                        )}
+                                        {isPaymentFailed ? 'Retry Payment' : `Pay KES ${loanDetails.verificationFee} Verification Fee`}
+                                    </div>
+                                </Button>
+                            </>
+                        ) : (
+                            <>
+                                {/* Disburse Loan Button */}
+                                <Button
+                                    size="lg"
+                                    className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white font-bold px-8 py-4 text-lg transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
+                                    onClick={handleProceedToLoan}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <CheckCircle className="w-6 h-6" />
+                                        Disburse Loan to M-Pesa
+                                    </div>
+                                </Button>
+                            </>
+                        )}
 
+                        {/* Apply for Different Loan Button */}
                         <Button
                             variant="outline"
                             size="lg"
