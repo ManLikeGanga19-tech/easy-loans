@@ -55,10 +55,26 @@ export default function PesaChapChapLanding() {
         repaymentPeriod: 2
     })
 
+    const [toastPosition, setToastPosition] = useState<"top-right" | "bottom-left">("bottom-left")
+
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth < 640) {
+                setToastPosition("top-right")
+            } else {
+                setToastPosition("bottom-left")
+            }
+        }
+
+        handleResize()
+        window.addEventListener("resize", handleResize)
+        return () => window.removeEventListener("resize", handleResize)
+    }, [])
+
     // Generate random timestamp within the last 3 minutes
     const generateRecentTimestamp = (): Date => {
         const now = Date.now()
-        const threeMinutesAgo = now - (3 * 60 * 1000) // 3 minutes in milliseconds
+        const threeMinutesAgo = now - (3 * 60 * 1000)
         const randomTime = Math.random() * (now - threeMinutesAgo) + threeMinutesAgo
         return new Date(randomTime)
     }
@@ -68,11 +84,11 @@ export default function PesaChapChapLanding() {
         { id: '1', name: 'John Mwangi', phone: '254712****78', amount: 15000, loanType: 'Personal Loan', timestamp: generateRecentTimestamp() },
         { id: '2', name: 'Mary Wanjiku', phone: '254701****45', amount: 25000, loanType: 'Education Loan', timestamp: generateRecentTimestamp() },
         { id: '3', name: 'Peter Kimani', phone: '254722****56', amount: 18500, loanType: 'Business Loan', timestamp: generateRecentTimestamp() },
-        { id: '4', name: 'Grace Akinyi', phone: '254723****89', amount: 32000, loanType: 'Agriculture Loan', timestamp: generateRecentTimestamp() },
+        { id: '4', name: 'Grace Akinyi', phone: '254733****89', amount: 32000, loanType: 'Agriculture Loan', timestamp: generateRecentTimestamp() },
         { id: '5', name: 'David Mutua', phone: '254745****23', amount: 12000, loanType: 'Emergency Loan', timestamp: generateRecentTimestamp() },
-        { id: '6', name: 'Susan Njeri', phone: '254796****67', amount: 28000, loanType: 'Home Improvement', timestamp: generateRecentTimestamp() },
-        { id: '7', name: 'James Ochieng', phone: '254727****12', amount: 22500, loanType: 'Motorcycle Loan', timestamp: generateRecentTimestamp() },
-        { id: '8', name: 'Lucy Wambui', phone: '254748****34', amount: 19500, loanType: 'Medical Loan', timestamp: generateRecentTimestamp() }
+        { id: '6', name: 'Susan Njeri', phone: '254756****67', amount: 28000, loanType: 'Home Improvement', timestamp: generateRecentTimestamp() },
+        { id: '7', name: 'James Ochieng', phone: '254767****12', amount: 22500, loanType: 'Motorcycle Loan', timestamp: generateRecentTimestamp() },
+        { id: '8', name: 'Lucy Wambui', phone: '254778****34', amount: 19500, loanType: 'Medical Loan', timestamp: generateRecentTimestamp() }
     ]
 
     const getTimeAgo = (timestamp: Date): string => {
@@ -95,15 +111,15 @@ export default function PesaChapChapLanding() {
 
     const showTransactionToast = (transaction: Transaction) => {
         toast.success(
-            <div className="flex flex-col space-y-2 min-h-[60px]">
+            <div className="flex flex-col space-y-1 min-h-[50px] text-sm sm:text-base">
                 <div className="flex justify-between items-center">
                     <span className="font-semibold text-green-700">{transaction.name}</span>
                     <span className="text-xs text-gray-500">{getTimeAgo(transaction.timestamp)}</span>
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-xs sm:text-sm text-gray-600">
                     {transaction.phone} • KSh {transaction.amount.toLocaleString()}
                 </div>
-                <div className="text-xs text-green-600 font-semibold bg-green-50 px-2 py-1 rounded-full inline-block w-fit">
+                <div className="text-xs text-green-600 font-semibold bg-green-50 px-2 py-0.5 rounded-full inline-block w-fit">
                     {transaction.loanType}
                 </div>
             </div>,
@@ -114,7 +130,6 @@ export default function PesaChapChapLanding() {
         )
     }
 
-    // Show transaction toasts at intervals
     useEffect(() => {
         let currentIndex = 0
 
@@ -122,22 +137,15 @@ export default function PesaChapChapLanding() {
             if (currentIndex < mockTransactions.length) {
                 showTransactionToast(mockTransactions[currentIndex])
                 currentIndex++
-
-                // Schedule next transaction after 5 seconds
                 setTimeout(showNextTransaction, 5000)
             } else {
-                // Reset to beginning and continue the cycle
                 currentIndex = 0
                 setTimeout(showNextTransaction, 5000)
             }
         }
 
-        // Start showing transactions after 5 seconds
         const initialTimeout = setTimeout(showNextTransaction, 5000)
-
-        return () => {
-            clearTimeout(initialTimeout)
-        }
+        return () => clearTimeout(initialTimeout)
     }, [])
 
     const generateLoanDetails = (formData: FormData): LoanDetails => {
@@ -370,6 +378,27 @@ export default function PesaChapChapLanding() {
                                     >
                                         {isSubmitting ? 'Processing...' : 'Get Pre-Approved Now'}
                                     </Button>
+
+                                    {/* Terms and Privacy */}
+                                    <div className="text-xs text-gray-500 text-center space-y-2 pt-2">
+                                        <p>
+                                            By applying, you agree to our{' '}
+                                            <a href="#" className="text-green-600 hover:text-green-700 underline">
+                                                Terms & Conditions
+                                            </a>{' '}
+                                            and{' '}
+                                            <a href="#" className="text-green-600 hover:text-green-700 underline">
+                                                Privacy Policy
+                                            </a>
+                                        </p>
+                                        <p className="text-gray-400">
+                                            We use bank-grade encryption to protect your data. Your information is safe with us.
+                                        </p>
+                                        <div className="flex items-center justify-center gap-1 text-gray-400">
+                                            <Shield className="w-3 h-3" />
+                                            <span>SSL Secured</span>
+                                        </div>
+                                    </div>
                                 </form>
                             </CardContent>
                         </Card>
@@ -377,12 +406,15 @@ export default function PesaChapChapLanding() {
                 </div>
             </div>
             <Toaster
-                position="bottom-left"
+                position={toastPosition}
                 toastOptions={{
                     style: {
-                        background: '#f0fdf4',
-                        border: '1px solid #bbf7d0',
-                        color: '#166534'
+                        background: "#f0fdf4",
+                        border: "1px solid #bbf7d0",
+                        color: "#166534",
+                        fontSize: "0.8rem",
+                        padding: "6px 10px",
+                        maxWidth: "260px"
                     }
                 }}
             />
