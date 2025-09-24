@@ -9,12 +9,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { CheckCircle, Shield, Zap, Clock, TrendingUp, Users, DollarSign } from 'lucide-react'
+import LoanResults from '@/components/LoanResults';
 
 interface FormData {
     fullName: string
     mpesaPhone: string
     nationalId: string
     loanType: string
+}
+
+interface LoanDetails {
+    trackingId: string
+    qualifiedAmount: number
+    verificationFee: number
+    interestRate: number
+    repaymentPeriod: number
 }
 
 export default function EasyLoansLanding() {
@@ -26,6 +35,42 @@ export default function EasyLoansLanding() {
     })
 
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [showLoanDetails, setShowLoanDetails] = useState(false)
+    const [loanDetails, setLoanDetails] = useState<LoanDetails>({
+        trackingId: '',
+        qualifiedAmount: 0,
+        verificationFee: 0,
+        interestRate: 5,
+        repaymentPeriod: 2
+    })
+
+    const generateLoanDetails = (formData: FormData): LoanDetails => {
+        // Generate tracking ID
+        const trackingId = `LON-C${Math.random().toString().substr(2, 6)}L${Date.now().toString().substr(-7)}`
+
+        // Calculate loan amount based on loan type (simplified logic)
+        const loanAmounts: { [key: string]: number } = {
+            personal: 15000,
+            business: 35000,
+            emergency: 10000,
+            education: 25000,
+            medical: 20000,
+            'home-improvement': 30000,
+            agriculture: 40000,
+            motorcycle: 22200
+        }
+
+        const qualifiedAmount = loanAmounts[formData.loanType] || 15000
+        const verificationFee = Math.round(qualifiedAmount * 0.007) // 0.7% of loan amount
+
+        return {
+            trackingId,
+            qualifiedAmount,
+            verificationFee,
+            interestRate: 10,
+            repaymentPeriod: 2
+        }
+    }
 
     const handleInputChange = (field: keyof FormData, value: string) => {
         setFormData(prev => ({
@@ -39,11 +84,26 @@ export default function EasyLoansLanding() {
         setIsSubmitting(true)
 
         // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise(resolve => setTimeout(resolve, 2000))
+
+        // Generate loan details
+        const generatedLoanDetails = generateLoanDetails(formData)
+        setLoanDetails(generatedLoanDetails)
 
         console.log('Form submitted:', formData)
-        alert('Application submitted successfully! We will contact you within 24 hours.')
+        console.log('Loan details:', generatedLoanDetails)
+
         setIsSubmitting(false)
+        setShowLoanDetails(true)
+    }
+
+    const handleProceedWithLoan = () => {
+        alert('Proceeding to payment verification...')
+    }
+
+    const handleApplyForDifferentLoan = () => {
+        setShowLoanDetails(false)
+        setFormData({ fullName: '', mpesaPhone: '', nationalId: '', loanType: '' })
     }
 
     const features = [
@@ -54,7 +114,7 @@ export default function EasyLoansLanding() {
 
     const stats = [
         { value: '50K+', label: 'Happy Customers', icon: Users },
-        { value: '$2B+', label: 'Loans Funded', icon: DollarSign },
+        { value: 'ksh 20M+', label: 'Loans Funded', icon: DollarSign },
         { value: '4.9★', label: 'Customer Rating', icon: CheckCircle }
     ]
 
@@ -69,6 +129,19 @@ export default function EasyLoansLanding() {
         { value: 'motorcycle', label: 'Motorcycle Loan' }
     ]
 
+    // If showing loan details, render the separate results component
+    if (showLoanDetails) {
+        return (
+            <LoanResults
+                formData={formData}
+                loanDetails={loanDetails}
+                onProceedWithLoan={handleProceedWithLoan}
+                onApplyForDifferentLoan={handleApplyForDifferentLoan}
+            />
+        )
+    }
+
+    // Main landing page
     return (
         <div className="min-h-screen relative overflow-hidden">
             {/* Background Image with Overlay */}
